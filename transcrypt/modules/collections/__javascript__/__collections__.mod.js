@@ -11,11 +11,11 @@ function __dsetitem__ (aKey, aValue) {
 }
 
 function __del__ (aKey) {
-    this.delete (aKey);
+    return this.delete (aKey);
 }
 
 function __clear__ () {
-    this.clear ()
+    this.__target__.clear ()
 }
 
 function __pop__ (aKey, aDefault) {
@@ -69,6 +69,7 @@ function __values__ () {
 }
 
 function __repr__ () {
+    if (this.__target__.size == 0) return 'OrderedDict()';
     var result = 'OrderedDict([';
     var comma = false;
     for (let [key, value] of this.__target__.entries ()) {
@@ -108,6 +109,9 @@ function OrderedDict (objectOrPairs) {
             set: function (target, name, value) {
                 target.__setattr__ (name, value);
                 return true;
+            },
+            deleteProperty: function (target, property) {
+                return target.py_del (property);
             }
         });
         __setProperty__ (proxy, '__target__', {value: target, enumerable: false, writable: true});
@@ -150,7 +154,6 @@ function OrderedDict (objectOrPairs) {
             // N.B. - this is a shallow copy per python std - so
             // it is assumed that children have already become
             // python objects at some point.
-            //instance = createInstance({});
 
             var aKeys = objectOrPairs.py_keys ();
             var len = aKeys.length;

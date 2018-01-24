@@ -23,6 +23,8 @@ def run(autoTester):
 
     autoTester.check('a' in od)
 
+    autoTester.check(od['a'])
+
     od['c'] = 'C2'
     autoTester.check(od)
 
@@ -46,6 +48,12 @@ def run(autoTester):
     d = {'e': 'E', 'd': 'D', 'a': 'A'}
 
     od.update(d)  # update with only one additional key, because update in cpython is not ordered
+    autoTester.check(od)
+
+    del od['d']
+    autoTester.check(od)
+
+    od.clear()
     autoTester.check(od)
 
     # __pragma__('jsiter')
