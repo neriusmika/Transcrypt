@@ -166,7 +166,7 @@ __pragma__ ('endif')
     var getattr = function (obj, name) {
         return name in obj ? obj [name] : obj ['py_' + name];
     };
-    __all__.getattr= getattr;
+    __all__.getattr = getattr;
 
     var hasattr = function (obj, name) {
         try {
@@ -281,12 +281,6 @@ __pragma__ ('endif')
     }
     __all__.__t__ = __t__;
 
-    var bool = function (any) {     // Always truly returns a bool, rather than something truthy or falsy
-        return !!__t__ (any);
-    };
-    bool.__name__ = 'bool';         // So it can be used as a type with a name
-    __all__.bool = bool;
-
     var float = function (any) {
         if (any == 'inf') {
             return Infinity;
@@ -310,13 +304,22 @@ __pragma__ ('endif')
         }
     };
     float.__name__ = 'float';
+    float.__bases__ = [object];
     __all__.float = float;
 
     var int = function (any) {
         return float (any) | 0
     };
     int.__name__ = 'int';
+    int.__bases__ = [object];
     __all__.int = int;
+    
+    var bool = function (any) {     // Always truly returns a bool, rather than something truthy or falsy
+        return !!__t__ (any);
+    };
+    bool.__name__ = 'bool';         // So it can be used as a type with a name
+    bool.__bases__ = [int];
+    __all__.bool = bool;
 
     var py_typeof = function (anObject) {
         var aType = typeof anObject;
@@ -350,8 +353,7 @@ __pragma__ ('endif')
                 }
             }
             return false;
-        };
-        
+        }
         if (classinfo instanceof Array) {   // Assume in most cases it isn't, then making it recursive rather than two functions saves a call
 __pragma__ ('ifdef', '__esv6__')
             for (let aClass2 of classinfo) {
@@ -365,12 +367,11 @@ __pragma__ ('endif')
             }
             return false;
         }
-
         try {                   // Most frequent use case first
             return isA (aClass);
         }
         catch (exception) {     // Using issubclass on primitives assumed rare 
-            return aClass == classinfo || classinfo == object || (aClass == bool && classinfo == int);
+            return aClass == classinfo || classinfo == object;
         }
     };
     __all__.issubclass = issubclass;
@@ -773,6 +774,7 @@ __pragma__ ('endif')
     __all__.list = list;
     Array.prototype.__class__ = list;   // All arrays are lists (not only if constructed by the list ctor), unless constructed otherwise
     list.__name__ = 'list';
+    list.__bases__ = [object];
 
     /*
     Array.from = function (iterator) { // !!! remove
@@ -923,6 +925,7 @@ __pragma__ ('endif')
     }
     __all__.tuple = tuple;
     tuple.__name__ = 'tuple';
+    tuple.__bases__ = [object];
 
     // Set extensions to Array
     // N.B. Since sets are unordered, set operations will occasionally alter the 'this' array by sorting it
@@ -939,6 +942,7 @@ __pragma__ ('endif')
     }
     __all__.set = set;
     set.__name__ = 'set';
+    set.__bases__ = [object];
 
     Array.prototype.__bindexOf__ = function (element) { // Used to turn O (n^2) into O (n log n)
     // Since sorting is lex, compare has to be lex. This also allows for mixed lists
@@ -1153,6 +1157,7 @@ __pragma__ ('endif')
 
     String.prototype.__class__ = str;   // All strings are str
     str.__name__ = 'str';
+    str.__bases__ = [object];
 
     String.prototype.__iter__ = function () {new __PyIterator__ (this);};
 
@@ -1537,6 +1542,7 @@ __pragma__ ('endif')
 
     __all__.dict = dict;
     dict.__name__ = 'dict';
+    dict.__bases__ = [object];
     
     // Docstring setter
 

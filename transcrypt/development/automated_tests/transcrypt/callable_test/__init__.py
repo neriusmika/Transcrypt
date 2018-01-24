@@ -91,3 +91,5 @@ def run(test):
 
     exc = Exception("asdf")
     test.check( callable(exc) )
+
+    test.check( callable(None) )
