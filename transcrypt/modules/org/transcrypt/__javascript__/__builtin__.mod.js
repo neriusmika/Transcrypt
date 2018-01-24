@@ -193,8 +193,11 @@ __pragma__ ('endif')
     // In general many Transcrypt compound types feature a deliberate blend of Python and JavaScript facilities, facilitating efficient integration with JavaScript libraries
     // If only Python objects and Python dicts are dealt with in a certain context, the more pythonic 'hasattr' is preferred for the objects as opposed to 'in' for the dicts
     var __in__ = function (element, container) {
-        if (py_typeof (container) == dict) {        // Currently only implemented as an augmented JavaScript object
-            return container.hasOwnProperty (element);
+        if (container === undefined || container === null) {
+            return false;
+        }
+        if (container.__contains__ instanceof Function) {
+            return container.__contains__ (element);
         }
         else {                                      // Parameter 'element' itself is an array, string or a plain, non-dict JavaScript object
             return (
@@ -1367,6 +1370,10 @@ __pragma__ ('endif')
     String.prototype.__rmul__ = String.prototype.__mul__;
 
     // Dict extensions to object
+    
+    function __contains__ (element) {
+        return this.hasOwnProperty (element);
+    }
 
     function __keys__ () {
         var keys = [];
@@ -1523,6 +1530,7 @@ __pragma__ ('endif')
         // Some JavaScript libraries call all enumerable callable properties of an object that's passed to them
         // So the properties of a dict should be non-enumerable
         __setProperty__ (instance, '__class__', {value: dict, enumerable: false, writable: true});
+        __setProperty__ (instance, '__contains__', {value: __contains__, enumerable: false});
         __setProperty__ (instance, 'py_keys', {value: __keys__, enumerable: false});
         __setProperty__ (instance, '__iter__', {value: function () {new __PyIterator__ (this.py_keys ());}, enumerable: false});
         __setProperty__ (instance, Symbol.iterator, {value: function () {new __JsIterator__ (this.py_keys ());}, enumerable: false});
