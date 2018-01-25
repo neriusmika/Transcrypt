@@ -2219,6 +2219,7 @@ class Generator (ast.NodeVisitor):
         self.visit_FunctionDef (node, async = True)
     
     def visit_FunctionDef (self, node, async = False):
+
         def emitScopedBody ():
             self.inscope (node)
 
@@ -2250,6 +2251,7 @@ class Generator (ast.NodeVisitor):
             isPropertyGetter = False
             isPropertySetter = False
             propertyFuncName = ''
+            getter = '__get__'
 
             if node.decorator_list:
                 for decorator in node.decorator_list:
@@ -2268,8 +2270,10 @@ class Generator (ast.NodeVisitor):
 
                     if nameCheck == 'classmethod':
                         isClassMethod = True
+                        getter = '__getcm__'
                     elif nameCheck == 'staticmethod':
                         isStaticMethod = True
+                        getter = '__getsm__'
                     elif nameCheck == 'property':
                         isPropertyGetter = True
                         propertyFuncName = '_get_' + node.name
@@ -2287,6 +2291,7 @@ class Generator (ast.NodeVisitor):
 
             if isPropertyGetter or isPropertySetter:
                 nodeName = propertyFuncName
+                self.pushProperty(nodeName)
             else:
                 nodeName = node.name
 
@@ -2294,18 +2299,17 @@ class Generator (ast.NodeVisitor):
             if decorate:
                 if isGlobal:
                     self.emit ('var {} = ', self.filterId (nodeName))
-                elif isClassMethod:
-                    self.emit ('get {} () {{return __getcm__ (this, ', self.filterId (nodeName))
-                elif isStaticMethod:
-                    self.emit ('get {} () {{return __getsm__ (this, ', self.filterId (nodeName))
-                elif isPropertyGetter or isPropertySetter:
-                    self.emit ('get {} () {{return __get__ (this, ', self.filterId (nodeName))
-                    self.pushProperty (nodeName)
-                elif self.allowJavaScriptCall:
-                    self.emit ('{}: function', self.filterId (nodeName))
                 else:
-                    self.emit ('get {} () {{return __get__ (this, ', self.filterId (nodeName))
-                    
+                    if self.allowJavaScriptCall:
+                        # decorators are not supported until we resolve, how to pass self or cls
+                        raise utils.Error(
+                            lineNr=self.lineNr,
+                            message='\n\tdecorators are not supported with jscall\n'
+                        )
+
+                        self.emit('{}: ', self.filterId(nodeName))
+                    else:
+                        self.emit ('get {} () {{return {} (this, ', self.filterId (nodeName), getter)
 
                 if self.allowOperatorOverloading:
                     self.emit ('__call__ (')
@@ -2327,33 +2331,39 @@ class Generator (ast.NodeVisitor):
             else:
                 if isGlobal:
                     self.emit ('var {} = {}function', self.filterId (nodeName), 'async ' if async else '')
-                elif isClassMethod:
-                    self.emit ('get {} () {{return __getcm__ (this, {}function', self.filterId (nodeName), 'async ' if async else '')
-                elif isStaticMethod:
-                    self.emit ('get {} () {{return {}function', self.filterId (nodeName), 'async ' if async else '')
-                elif isPropertyGetter or isPropertySetter:
-                    self.emit('get {} () {{return __get__ (this, {}function', self.filterId(nodeName), 'async ' if async else '')
-                    self.pushProperty (nodeName)
-                elif self.allowJavaScriptCall:
-                    self.emit ('{}: function', self.filterId (nodeName), 'async ' if async else '')
                 else:
-                    self.emit ('get {} () {{return __get__ (this, {}function', self.filterId (nodeName), 'async ' if async else '')
+                    if self.allowJavaScriptCall:
+                        self.emit('{}: function', self.filterId(nodeName), 'async ' if async else '')
+                    else:
+                        if isStaticMethod:
+                            self.emit ('get {} () {{return {}function', self.filterId (nodeName), 'async ' if async else '')
+                        else:
+                            self.emit ('get {} () {{return {} (this, {}function', self.filterId (nodeName), getter, 'async ' if async else '')
 
             yieldStarIndex = len (self.targetFragments)
 
             self.emit (' ')
             
-            if self.allowJavaScriptCall and not (
-                isGlobal or isClassMethod or isStaticMethod or isPropertyGetter or isPropertySetter
-            ):
+            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isPropertyGetter or isPropertySetter):
+                # remove first argument from methods when jscall enabled
+                # exceptions:
+                #   1. staticmethods - don't have "self" or "cls" as first parameter
+                #   2. properties - "self" is passed from property getters, setters
+                firstArg = node.args.args [0].arg
                 node.args.args = node.args.args [1:]
 
             self.visit (node.args)
 
-            if self.allowJavaScriptCall and not (
-                isGlobal or isClassMethod or isStaticMethod or isPropertyGetter or isPropertySetter
-            ):
-               self.emit ('var self = this;\n')
+            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isPropertyGetter or isPropertySetter):
+                # assign first removed parameter when jscall enabled
+                # exceptions:
+                #   1. classmethods - need to resolve who is the caller, class or instance
+                #   2. staticmethods - don't have "self" or "cls" as first parameter
+                #   3. properties - "self" is passed from property getters, setters
+                if isClassMethod:
+                    self.emit ('var {} = \'__class__\' in this ? this.__class__ : this;\n', firstArg)
+                elif not isStaticMethod:
+                    self.emit ('var {} = this;\n', firstArg)
             
             emitScopedBody ()
             self.emit ('}}')
@@ -2365,13 +2375,13 @@ class Generator (ast.NodeVisitor):
                 self.emit (')' * decoratorsUsed)
 
             if not isGlobal:
-                if isStaticMethod:
-                    self.emit (';}}')
-                else:
-                    if self.allowMemoizeCalls:
-                        self.emit (', \'{}\'', nodeName)  # Name will be used as attribute name to add bound function to instance
-                        
-                    if not self.allowJavaScriptCall:
+                if not self.allowJavaScriptCall:
+                    if isStaticMethod:
+                        self.emit (';}}')
+                    else:
+                        if self.allowMemoizeCalls:
+                            self.emit (', \'{}\'', nodeName)  # Name will be used as attribute name to add bound function to instance
+
                         self.emit (');}}')
 
                 if nodeName == '__iter__':

@@ -259,6 +259,14 @@ __pragma__ ('ifdef', '__esv6__')
                             target [name] = value;
                         }
                         return true;
+                    },
+                    deleteProperty: function (target, property) {
+                        try {
+                            return target.__delattr__ (property);
+                        }
+                        catch (exception) {         // Target doesn't have a __delattr__ method
+                            return true;
+                        }
                     }
                 })
             }
