@@ -2333,7 +2333,7 @@ class Generator (ast.NodeVisitor):
                     self.emit ('var {} = {}function', self.filterId (nodeName), 'async ' if async else '')
                 else:
                     if self.allowJavaScriptCall:
-                        self.emit('{}: function', self.filterId(nodeName), 'async ' if async else '')
+                        self.emit ('{}: function', self.filterId (nodeName), 'async ' if async else '')
                     else:
                         if isStaticMethod:
                             self.emit ('get {} () {{return {}function', self.filterId (nodeName), 'async ' if async else '')
@@ -2362,7 +2362,7 @@ class Generator (ast.NodeVisitor):
                 #   3. properties - "self" is passed from property getters, setters
                 if isClassMethod:
                     self.emit ('var {} = \'__class__\' in this ? this.__class__ : this;\n', firstArg)
-                elif not isStaticMethod:
+                else:
                     self.emit ('var {} = this;\n', firstArg)
             
             emitScopedBody ()

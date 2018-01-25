@@ -10,44 +10,42 @@ class OrderedDict:
     __bases__ = [dict]
 
     def __init__(self, items=None):
-        self._map = __new__ (Map ())
+        self.__map__ = __new__ (Map ())
         if items:
             if isinstance(items, object):
                 for key in Object.js_keys (items):
                     if items.hasOwnProperty (key):
-                        self._map.set (key, items [key])
+                        self.__map__.set (key, items [key])
 
     __pragma__('jscall')
     def __getattr__(self, item):
-        return self._map.js_get (item)
+        return self.__map__.js_get (item)
 
     def __setattr__(self, item, value):
-        self._map.set (item, value)
-    __pragma__('nojscall')
+        self.__map__.set (item, value)
 
     def __contains__(self, item):
-        return self._map.has (item)
+        return self.__map__.has (item)
 
     def __delattr__(self, item):
-        return self._map.delete (item)
+        return self.__map__.delete (item)
 
     def items(self):
-        return [entry for entry in self._map.entries ()]
+        return [entry for entry in self.__map__.entries ()]
 
     def keys(self):
-        return [key for key in self._map.js_keys ()]
+        return [key for key in self.__map__.js_keys ()]
 
     def values(self):
-        return [val for val in self._map.js_values ()]
+        return [val for val in self.__map__.js_values ()]
 
     def clear(self):
-        self._map.js_clear ()
+        self.__map__.js_clear ()
 
-    __pragma__('jscall')
     def pop(self, item, default=None):
-        result = self._map.js_get (item)
+        result = self.__map__.js_get (item)
         if result:
-            self._map.delete (item)
+            self.__map__.delete (item)
             return result
         else:
             if not default:
@@ -56,27 +54,25 @@ class OrderedDict:
                 return default
 
     def popitem(self, last=True):
-        if self._map.size == 0:
+        if self.__map__.size == 0:
             raise KeyError ('popitem(): dictionary is empty')
-        idx = self._map.size - 1 if last else 0
-        key = list (self._map.js_keys ()) [idx]
-        result = key, self._map.js_get (key)
-        self._map.delete (key)
+        idx = self.__map__.size - 1 if last else 0
+        key = list (self.__map__.js_keys ()) [idx]
+        result = key, self.__map__.js_get (key)
+        self.__map__.delete (key)
         return result
-    __pragma__('nojscall')
 
     def update(self, items):
         for k in items.keys ():
-            self._map.set (k, items [k])
+            self.__map__.set (k, items [k])
 
-    __pragma__('jscall')
     def __repr__(self):
-        if self._map.size == 0:
+        if self.__map__.size == 0:
             return 'OrderedDict()'
         else:
             result = 'OrderedDict(['
             comma = False
-            for key, value in self._map.entries ():
+            for key, value in self.__map__.entries ():
                 keyRepr = "'" + key + "'" if type (key) == str else key
                 if comma:
                     result += ', '
