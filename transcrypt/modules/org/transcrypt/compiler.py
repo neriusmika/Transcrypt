@@ -2248,8 +2248,7 @@ class Generator (ast.NodeVisitor):
             decorate = False
             isClassMethod = False
             isStaticMethod = False
-            isPropertyGetter = False
-            isPropertySetter = False
+            isProperty = False
             propertyFuncName = ''
             getter = '__get__'
 
@@ -2275,21 +2274,21 @@ class Generator (ast.NodeVisitor):
                         isStaticMethod = True
                         getter = '__getsm__'
                     elif nameCheck == 'property':
-                        isPropertyGetter = True
+                        isProperty = True
                         propertyFuncName = '_get_' + node.name
                     elif re.match ('[a-zA-Z0-9_]+\.setter', nameCheck):
-                        isPropertySetter = True
+                        isProperty = True
                         propertyFuncName = '_set_' + re.match ('([a-zA-Z0-9_]+)\.setter', nameCheck).group (1)
                     else:
                         decorate = True
 
-            if sum ([isClassMethod, isStaticMethod, isPropertyGetter, isPropertySetter]) > 1:
+            if sum ([isClassMethod, isStaticMethod, isProperty]) > 1:
                 raise utils.Error (
                     lineNr = self.lineNr,
                     message = '\n\tstaticmethod, classmethod and property decorators can\'t be mixed\n'
                 )
 
-            if isPropertyGetter or isPropertySetter:
+            if isProperty:
                 nodeName = propertyFuncName
                 self.pushProperty(nodeName)
             else:
@@ -2344,7 +2343,7 @@ class Generator (ast.NodeVisitor):
 
             self.emit (' ')
             
-            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isPropertyGetter or isPropertySetter):
+            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isProperty):
                 # remove first argument from methods when jscall enabled
                 # exceptions:
                 #   1. staticmethods - don't have "self" or "cls" as first parameter
@@ -2354,7 +2353,7 @@ class Generator (ast.NodeVisitor):
 
             self.visit (node.args)
 
-            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isPropertyGetter or isPropertySetter):
+            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isProperty):
                 # assign first removed parameter when jscall enabled
                 # exceptions:
                 #   1. classmethods - need to resolve who is the caller, class or instance
