@@ -2245,11 +2245,11 @@ class Generator (ast.NodeVisitor):
                 self.emit ('\n')
             self.adaptLineNrString (node)
 
+            nodeName = node.name
             decorate = False
             isClassMethod = False
             isStaticMethod = False
             isProperty = False
-            propertyFuncName = ''
             getter = '__get__'
 
             if node.decorator_list:
@@ -2275,10 +2275,12 @@ class Generator (ast.NodeVisitor):
                         getter = '__getsm__'
                     elif nameCheck == 'property':
                         isProperty = True
-                        propertyFuncName = '_get_' + node.name
+                        nodeName = '_get_' + node.name
+                        self.pushProperty (nodeName)
                     elif re.match ('[a-zA-Z0-9_]+\.setter', nameCheck):
                         isProperty = True
-                        propertyFuncName = '_set_' + re.match ('([a-zA-Z0-9_]+)\.setter', nameCheck).group (1)
+                        nodeName = '_set_' + re.match ('([a-zA-Z0-9_]+)\.setter', nameCheck).group (1)
+                        self.pushProperty (nodeName)
                     else:
                         decorate = True
 
@@ -2288,12 +2290,6 @@ class Generator (ast.NodeVisitor):
                     message = '\n\tstaticmethod, classmethod and property decorators can\'t be mixed\n'
                 )
 
-            if isProperty:
-                nodeName = propertyFuncName
-                self.pushProperty(nodeName)
-            else:
-                nodeName = node.name
-
             decoratorsUsed = 0
             if decorate:
                 if isGlobal:
@@ -2301,12 +2297,12 @@ class Generator (ast.NodeVisitor):
                 else:
                     if self.allowJavaScriptCall:
                         # decorators are not supported until we resolve, how to pass self or cls
-                        raise utils.Error(
+                        raise utils.Error (
                             lineNr=self.lineNr,
                             message='\n\tdecorators are not supported with jscall\n'
                         )
 
-                        self.emit('{}: ', self.filterId(nodeName))
+                        self.emit('{}: ', self.filterId (nodeName))
                     else:
                         self.emit ('get {} () {{return {} (this, ', self.filterId (nodeName), getter)
 
@@ -2342,8 +2338,10 @@ class Generator (ast.NodeVisitor):
             yieldStarIndex = len (self.targetFragments)
 
             self.emit (' ')
+
+            skipFirstArg = self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isProperty)
             
-            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isProperty):
+            if skipFirstArg:
                 # remove first argument from methods when jscall enabled
                 # exceptions:
                 #   1. staticmethods - don't have "self" or "cls" as first parameter
@@ -2353,7 +2351,7 @@ class Generator (ast.NodeVisitor):
 
             self.visit (node.args)
 
-            if self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isProperty):
+            if skipFirstArg:
                 # assign first removed parameter when jscall enabled
                 # exceptions:
                 #   1. classmethods - need to resolve who is the caller, class or instance
