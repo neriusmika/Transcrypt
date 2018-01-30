@@ -347,7 +347,7 @@ __pragma__ ('endif')
     
     var issubclass = function (aClass, classinfo) {
         function isA (queryClass) {
-            if (queryClass == classinfo) {
+            if (queryClass === classinfo) {
                 return true;
             }
             for (var index = 0; index < queryClass.__bases__.length; index++) {
@@ -1144,15 +1144,19 @@ __pragma__ ('endif')
     // String extensions
 
     function str (stringable) {
-        try {
-            return stringable.__str__ ();
-        }
-        catch (exception) {
+        if (typeof stringable === 'number')
+            return stringable.toString();
+        else {
             try {
-                return repr (stringable);
+                return stringable.__str__ ();
             }
             catch (exception) {
-                return String (stringable); // No new, so no permanent String object but a primitive in a temporary 'just in time' wrapper
+                try {
+                    return repr (stringable);
+                }
+                catch (exception) {
+                    return String (stringable); // No new, so no permanent String object but a primitive in a temporary 'just in time' wrapper
+                }
             }
         }
     };
