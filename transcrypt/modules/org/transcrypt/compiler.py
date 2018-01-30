@@ -2219,7 +2219,6 @@ class Generator (ast.NodeVisitor):
         self.visit_FunctionDef (node, async = True)
     
     def visit_FunctionDef (self, node, async = False):
-
         def emitScopedBody ():
             self.inscope (node)
 
@@ -2302,7 +2301,7 @@ class Generator (ast.NodeVisitor):
                             message='\n\tdecorators are not supported with jscall\n'
                         )
 
-                        self.emit('{}: ', self.filterId (nodeName))
+                        self.emit ('{}: ', self.filterId (nodeName))
                     else:
                         self.emit ('get {} () {{return {} (this, ', self.filterId (nodeName), getter)
 
@@ -2355,8 +2354,6 @@ class Generator (ast.NodeVisitor):
                 # assign first removed parameter when jscall enabled
                 # exceptions:
                 #   1. classmethods - need to resolve who is the caller, class or instance
-                #   2. staticmethods - don't have "self" or "cls" as first parameter
-                #   3. properties - "self" is passed from property getters, setters
                 if isClassMethod:
                     self.emit ('var {} = \'__class__\' in this ? this.__class__ : this;\n', firstArg)
                 else:
