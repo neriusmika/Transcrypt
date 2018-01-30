@@ -2305,12 +2305,14 @@ class Generator (ast.NodeVisitor):
                     message = '\n\tstaticmethod, classmethod and property decorators can\'t be mixed\n'
                 )
 
+            jsCall = self.allowJavaScriptCall and nodeName != '__init__'
+
             decoratorsUsed = 0
             if decorate:
                 if isGlobal:
                     self.emit ('var {} = ', self.filterId (nodeName))
                 else:
-                    if self.allowJavaScriptCall and nodeName != '__init__':
+                    if jsCall:
                         # decorators are not supported until we resolve, how to pass self or cls
                         raise utils.Error (
                             lineNr=self.lineNr,
@@ -2342,7 +2344,7 @@ class Generator (ast.NodeVisitor):
                 if isGlobal:
                     self.emit ('var {} = {}function', self.filterId (nodeName), 'async ' if async else '')
                 else:
-                    if self.allowJavaScriptCall and nodeName != '__init__':
+                    if jsCall:
                         self.emit ('{}: function', self.filterId (nodeName), 'async ' if async else '')
                     else:
                         if isStaticMethod:
@@ -2354,7 +2356,7 @@ class Generator (ast.NodeVisitor):
 
             self.emit (' ')
 
-            skipFirstArg = self.allowJavaScriptCall and not (isGlobal or isStaticMethod or isProperty or nodeName == '__init__')
+            skipFirstArg = jsCall and not (isGlobal or isStaticMethod or isProperty)
             
             if skipFirstArg:
                 # remove first argument from methods when jscall enabled
@@ -2386,7 +2388,7 @@ class Generator (ast.NodeVisitor):
                 self.emit (')' * decoratorsUsed)
 
             if not isGlobal:
-                if not self.allowJavaScriptCall:
+                if not jsCall:
                     if isStaticMethod:
                         self.emit (';}}')
                     else:
