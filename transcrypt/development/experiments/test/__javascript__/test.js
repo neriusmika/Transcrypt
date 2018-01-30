@@ -1,5 +1,5 @@
 "use strict";
-// Transcrypt'ed from Python, 2018-01-25 19:46:45
+// Transcrypt'ed from Python, 2018-01-29 10:41:26
 function test () {
     var __symbols__ = ['__py3.6__', '__esv5__'];
     var __all__ = {};
@@ -141,7 +141,7 @@ function test () {
 						get __init__ () {return __get__ (this, function (self) {
 							self.interpreter_name = 'python';
 							self.transpiler_name = 'transcrypt';
-							self.transpiler_version = '3.6.84';
+							self.transpiler_version = '3.6.86';
 							self.target_subdir = '__javascript__';
 						});}
 					});
@@ -1689,7 +1689,7 @@ function test () {
         if (typeof a == 'object' && '__mod__' in a) {
             return a.__mod__ (b);
         }
-        else if (typeof b == 'object' && '__rpow__' in b) {
+        else if (typeof b == 'object' && '__rmod__' in b) {
             return b.__rmod__ (a);
         }
         else {
@@ -2113,6 +2113,9 @@ function test () {
         if (typeof container == 'object' && '__getitem__' in container) {
             return container.__getitem__ (key);
         }
+        else if ((typeof container == 'string' || container instanceof Array) && key < 0) {
+            return container [container.length + key];
+        }
         else {
             return container [key];
         }
@@ -2121,6 +2124,9 @@ function test () {
     var __setitem__ = function (container, key, value) {
         if (typeof container == 'object' && '__setitem__' in container) {
             container.__setitem__ (key, value);
+        }
+        else if ((typeof container == 'string' || container instanceof Array) && key < 0) {
+            container [container.length + key] = value;
         }
         else {
             container [key] = value;
@@ -2147,38 +2153,19 @@ function test () {
     __all__.__setslice__ = __setslice__;
 	(function () {
 		var __name__ = '__main__';
-		var A = __class__ ('A', [object], {
-			__module__: __name__,
-			get __init__ () {return __get__ (this, function (self, x) {
-				self.x = x;
-			});},
-			f: function (param) {
-				var self = this;
-				return self.x * param;
-			},
-			get g () {return __get__ (this, function (self, param) {
-				return self.x * param;
-			});}
-		});
-		var a = A (2);
-		var a2 = A (3);
-		print (a.f (4), a2.f (5));
-		var B = __class__ ('B', [A], {
-			__module__: __name__,
-		});
-		var b = B (4);
-		var b2 = B (5);
-		print (b.f (6), b2.f (7));
+		var a = list ([1, 2, 3]);
+		var b = list ([4, 5, 6]);
+		print (a + b);
+		__call__ (print, null, __add__ (a, b));
+		print (a + b);
 		__pragma__ ('<all>')
-			__all__.A = A;
-			__all__.B = B;
 			__all__.__name__ = __name__;
 			__all__.a = a;
-			__all__.a2 = a2;
 			__all__.b = b;
-			__all__.b2 = b2;
 		__pragma__ ('</all>')
 	}) ();
     return __all__;
 }
 window ['test'] = test ();
+
+//# sourceMappingURL=extra/sourcemap/test.js.map

@@ -466,3 +466,73 @@ def run (autoTester):
 
     autoTester.check (foo())
     autoTester.check (foo(default = 'Hello World'))
+    
+    autoTester.check ('Issue 460')
+    
+    s460 = 'car'
+    l460 = [11, 22, 33]
+    t460 = (4, 5, 6)
+    d460 = {-1: 'mmminusOne', 'b': 'bbbike'}
+    
+    #__pragma__ ('opov')
+    
+    l460 [0] = 1
+    l460 [-2] = 2
+    l460 [-1] = 3
+    
+    d460 [-1] = 'minusOne'
+    d460 ['b'] = 'bike'
+    
+    autoTester.check (s460 [0], s460 [1], s460 [2], s460 [-1], s460 [-2], s460 [-3])
+    autoTester.check (l460 [0], l460 [1], l460 [2], l460 [-1], l460 [-2], l460 [-3])
+    autoTester.check (t460 [0], t460 [1], t460 [2], t460 [-1], t460 [-2], t460 [-3])
+    autoTester.check (d460 [-1], d460 ['b'])
+    
+    autoTester.check (s460 [0], s460 [1], s460 [2], s460 [-1], s460 [-2], s460 [-3])
+    autoTester.check (l460 [0], l460 [1], l460 [2], l460 [-1], l460 [-2], l460 [-3])
+    autoTester.check (t460 [0], t460 [1], t460 [2], t460 [-1], t460 [-2], t460 [-3])
+    autoTester.check (d460 [-1], d460 ['b'])
+
+    #__pragma__ ('noopov')
+
+    #__pragma__ ('keycheck')
+    
+    try:
+        autoTester.check (d460 [-1], d460 ['c'])
+    except:
+        autoTester.check (111)
+    try:
+        autoTester.check (d460 [-2], d460 ['b'])
+    except:
+        autoTester.check (222)
+        
+    #__pragma__ ('nokeycheck')
+    
+    a = [1, 2, 3]
+    b = [4, 5, 6]
+    c = '1,2,34,5,6'
+
+    if __envir__.executor_name == __envir__.transpiler_name:
+        autoTester.check (a + b)
+        autoTester.check (a + b)    #__:opov
+        autoTester.check (a + b)
+    else:
+        autoTester.check (c)
+        autoTester.check (a + b)    #__:opov
+        autoTester.check (c)
+
+    #__pragma__ ('opov')
+        
+    if __envir__.executor_name == __envir__.transpiler_name:
+        autoTester.check (a + b)    #__:noopov
+        autoTester.check (a + b)
+        autoTester.check (a + b)    #__:noopov
+    else:
+        autoTester.check (c)        #__:noopov
+        autoTester.check (a + b)
+        autoTester.check (c)        #__:noopov
+
+    #__pragma__ ('noopov')
+
+    
+            
