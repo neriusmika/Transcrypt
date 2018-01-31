@@ -401,29 +401,26 @@ class Module:
                 pos = line.find ('//')
                 return (line if pos < 0 else line [ : pos]) .rstrip ()
         
-            loading = True
+            loadStack = []
 
             def loadable (targetLine):
-                nonlocal loading
-
                 def __pragma__ (name, *args):
-                    nonlocal loading
 
                     if name == 'ifdef':
-                        loading = args [0] in symbols
+                        loadStack.append (args [0] in symbols)
                     elif name == 'ifndef':
-                        loading = not args [0] in symbols
+                        loadStack.append (not args [0] in symbols)
                     elif name == 'else':
-                        loading = not loading
+                        loadStack [-1] = not loadStack [-1]
                     elif name == 'endif':
-                        loading = True
+                        loadStack.pop ()
 
                 strippedLine = targetLine.lstrip ()
                 if self.stripComments and strippedLine.startswith ('/*'):
-                    loading = False
-                    return loading  # So skip this line
+                    loadStack.append (False)
+                    return all (loadStack)  # So skip this line
                 elif self.stripComments and strippedLine.endswith ('*/'):
-                    loading = True  # Load next line
+                    loadStack.pop ()        # Possibly load next line
                 elif strippedLine.startswith ('__pragma__') and (
                     'ifdef' in strippedLine or
                     'ifndef' in strippedLine or
@@ -431,9 +428,9 @@ class Module:
                     'endif' in strippedLine
                 ):
                     exec (strippedLine)
-                    return False    # Skip line anyhow
+                    return False            # Skip line anyhow, independent of loadStack
                 else:
-                    return loading  # Skip line only if not in loading state
+                    return all (loadStack)  # Skip line only if not in loading state according to loadStack
             
             if self.stripComments:
                 loadableLines = [commentlessLine for commentlessLine in [stripSingleLineComments (line) for line in code.split ('\n') if loadable (line)] if commentlessLine]
@@ -2313,7 +2310,7 @@ class Generator (ast.NodeVisitor):
                     self.emit ('var {} = ', self.filterId (nodeName))
                 else:
                     if jsCall:
-                        # decorators are not supported until we resolve, how to pass self or cls
+                        # Decorators are not supported until we resolve, how to pass self or cls
                         raise utils.Error (
                             lineNr=self.lineNr,
                             message='\n\tdecorators are not supported with jscall\n'
@@ -2359,8 +2356,8 @@ class Generator (ast.NodeVisitor):
             skipFirstArg = jsCall and not (isGlobal or isStaticMethod or isProperty)
             
             if skipFirstArg:
-                # remove first argument from methods when jscall enabled
-                # exceptions:
+                # Remove first argument from methods when jscall enabled
+                # Exceptions:
                 #   1. staticmethods - don't have "self" or "cls" as first parameter
                 #   2. properties - "self" is passed from property getters, setters
                 #   3. __init__ methods don't work with jscall
@@ -2370,8 +2367,8 @@ class Generator (ast.NodeVisitor):
             self.visit (node.args)
 
             if skipFirstArg:
-                # assign first removed parameter when jscall enabled
-                # exceptions:
+                # Assign first removed parameter when jscall enabled
+                # Exceptions:
                 #   1. classmethods - need to resolve who is the caller, class or instance
                 if isClassMethod:
                     self.emit ('var {} = \'__class__\' in this ? this.__class__ : this;\n', firstArg)

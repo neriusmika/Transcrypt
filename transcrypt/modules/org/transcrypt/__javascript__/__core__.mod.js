@@ -283,7 +283,7 @@ __pragma__ ('endif')
     
     // Class creator facade function, calls class creation worker
     var __class__ = function (name, bases, attribs, meta) {         // Parameter meta is optional
-        if (meta === undefined) {
+        if (meta === undefined) { // ??? @neriusmika: Why === prefered here? Have usually used ==, disadvantages?
             meta = bases [0] .__metaclass__;
         }
                 
