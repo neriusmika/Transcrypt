@@ -360,16 +360,17 @@ __pragma__ ('endif')
             return false;
         }
         try {
-            if (aClass == classinfo)
+            var aClass2 = aClass;
+            if (aClass2 == classinfo)
                 return true;
             else {
-                var bases = [].slice.call (aClass.__bases__);
+                var bases = [].slice.call (aClass2.__bases__);
                 while (bases.length) {
-                    aClass = bases.shift ();
-                    if (aClass == classinfo)
+                    aClass2 = bases.shift ();
+                    if (aClass2 == classinfo)
                         return true;
-                    if (aClass.__bases__.length)
-                        bases = [].slice.call (aClass.__bases__).concat (bases);
+                    if (aClass2.__bases__.length)
+                        bases = [].slice.call (aClass2.__bases__).concat (bases);
                 }
                 return false;
             }
