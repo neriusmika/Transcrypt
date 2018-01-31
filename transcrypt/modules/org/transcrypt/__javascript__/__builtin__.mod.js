@@ -346,21 +346,6 @@ __pragma__ ('endif')
     __all__.py_typeof = py_typeof;
     
     var issubclass = function (aClass, classinfo) {
-        function isA (queryClass) {
-            if (queryClass == classinfo)
-                return true;
-            else {
-                var bases = [].slice.call (queryClass.__bases__);
-                while (bases.length) {
-                    queryClass = bases.shift ();
-                    if (queryClass == classinfo)
-                        return true;
-                    if (queryClass.__bases__.length)
-                        bases = [].slice.call (queryClass.__bases__).concat (bases);
-                }
-                return false;
-            }
-        }
         if (classinfo instanceof Array) {   // Assume in most cases it isn't, then making it recursive rather than two functions saves a call
 __pragma__ ('ifdef', '__esv6__')
             for (let aClass2 of classinfo) {
@@ -374,8 +359,20 @@ __pragma__ ('endif')
             }
             return false;
         }
-        try {                   // Most frequent use case first
-            return isA (aClass);
+        try {
+            if (aClass == classinfo)
+                return true;
+            else {
+                var bases = [].slice.call (aClass.__bases__);
+                while (bases.length) {
+                    aClass = bases.shift ();
+                    if (aClass == classinfo)
+                        return true;
+                    if (aClass.__bases__.length)
+                        bases = [].slice.call (aClass.__bases__).concat (bases);
+                }
+                return false;
+            }
         }
         catch (exception) {     // Using issubclass on primitives assumed rare 
             return aClass == classinfo || classinfo == object;
