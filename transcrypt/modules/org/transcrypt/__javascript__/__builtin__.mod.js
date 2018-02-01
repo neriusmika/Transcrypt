@@ -249,7 +249,13 @@ __pragma__ ('endif')
     function __k__ (keyed, key) {  //  Check existence of dict key via retrieved element
         var result = keyed [key];
         if (typeof result == 'undefined') {
-             throw KeyError (key, new Error());
+            if (keyed instanceof Array)
+                if (key == +key && key >= 0 && keyed.length > key)
+                    return result;
+                else
+                    throw IndexError (key, new Error());
+            else
+                throw KeyError (key, new Error());
         }
         return result;
     }
