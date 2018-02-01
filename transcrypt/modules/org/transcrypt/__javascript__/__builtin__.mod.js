@@ -291,6 +291,9 @@ __pragma__ ('endif')
         else if (any == '-inf') {
             return -Infinity;
         }
+        else if (any == 'nan') {
+            return NaN;
+        }
         else if (isNaN (parseFloat (any))) {    // Call to parseFloat needed to exclude '', ' ' etc.
             if (any === false) {
                 return 0;
@@ -1173,7 +1176,14 @@ __pragma__ ('endif')
     };
 
     String.prototype.endswith = function (suffix) {
-        return suffix == '' || this.slice (-suffix.length) == suffix;
+        if (suffix instanceof Array) {
+            for (var i=0;i<suffix.length;i++) {
+                if (this.slice (-suffix[i].length) == suffix[i])
+                    return true;
+            }
+        } else
+            return suffix == '' || this.slice (-suffix.length) == suffix;
+        return false;
     };
 
     String.prototype.find  = function (sub, start) {
@@ -1273,7 +1283,7 @@ __pragma__ ('endif')
 __pragma__ ('ifdef', '__esv6__')
         strings = Array.from (strings); // Much faster than iterating through strings char by char
 __pragma__ ('endif')
-        return strings.join (this);
+        return strings.filter (function (val) {return val.length > 0;}).join (this);
     };
 
     String.prototype.lower = function () {
@@ -1344,7 +1354,14 @@ __pragma__ ('endif')
     };
 
     String.prototype.startswith = function (prefix) {
-        return this.indexOf (prefix) == 0;
+        if (prefix instanceof Array) {
+            for (var i=0;i<prefix.length;i++) {
+                if (this.indexOf (prefix [i]) == 0)
+                    return true;
+            }
+        } else
+            return this.indexOf (prefix) == 0;
+        return false;
     };
 
     String.prototype.strip = function () {
@@ -1356,8 +1373,8 @@ __pragma__ ('endif')
     };
 
     String.prototype.__mul__ = function (scalar) {
-        var result = this;
-        for (var i = 1; i < scalar; i++) {
+        var result = '';
+        for (var i = 0; i < scalar; i++) {
             result = result + this;
         }
         return result;
