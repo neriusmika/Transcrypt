@@ -1283,7 +1283,7 @@ __pragma__ ('endif')
 __pragma__ ('ifdef', '__esv6__')
         strings = Array.from (strings); // Much faster than iterating through strings char by char
 __pragma__ ('endif')
-        return strings.filter (function (val) {return val.length > 0;}).join (this);
+        return strings.join (this);
     };
 
     String.prototype.lower = function () {
