@@ -73,6 +73,7 @@ if '__esv6__' in __symbols__:
 
 import set_comprehensions
 import simple_and_augmented_assignment
+import string_format
 import truthyness
 import tuple_assignment
 
@@ -151,6 +152,7 @@ if '__esv6__' in __symbols__:
 
 autoTester.run (set_comprehensions, 'set_comprehensions')
 autoTester.run (simple_and_augmented_assignment, 'simple_and_augmented_assignment')
+autoTester.run (string_format, 'string_format')
 autoTester.run (truthyness, 'truthyness')
 autoTester.run (tuple_assignment, 'tuple_assignment')
 

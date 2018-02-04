@@ -326,6 +326,222 @@ __pragma__ ('endif')
     int.__bases__ = [object];
     __all__.int = int;
     
+__pragma__ ('ifdef', '__stringformat__')
+    Number.prototype.__format__ = function (fmt_spec) {
+        if (fmt_spec == undefined || fmt_spec.strip ().length == 0)
+			return this.toString ();
+        var thousand_sep = false;
+        var g_default = false;
+        var width = 0;
+        var zero = false;
+        var alternate = false;
+        var sign = '-';
+        var align = '>';
+        var fill = ' ';
+        var precision = undefined;
+        var ftype = undefined;
+        var val = this.valueOf ();
+        var is_negative = val < 0;
+        val = Math.abs (val);
+        
+        var pad = function (s, width, fill, align) {
+            if (fill == undefined)
+                var fill = ' ';
+            if (align == undefined)
+                var align = '>';
+            var alt = '';
+            var sign = '';
+            if (s.startswith (['+', '-'])) {
+                sign = s [0];
+                s = s.substr (1);
+            }
+            if (alternate && s.startswith (['0b', '0o', '0x'])) {
+                alt = s.slice (0, 2);
+                s = s.substr (2);
+            }
+            var len = s.length + sign.length + alt.length;
+            var c = width - len;
+            switch (align) {
+                case '=':
+                    return sign + alt + __mul__ (fill, c) + s;
+                case '>':
+                    return __mul__ (fill, c) + sign + alt + s;
+                case '<':
+                    return sign + alt + s + __mul__ (fill, c);
+                case '^':
+                    var m = ((c % 2) + 2) % 2;
+                    var c = Math.floor (c / 2);
+                    return __mul__ (fill, c) + sign + alt + s + __mul__ (fill, c + m);
+                default:
+                    throw ValueError ("Invalid align type: '" + align + "'", new Error ());
+            }
+        };
+        
+        var format_float = function (val) {
+            if (val.indexOf ('e+') == -1 && (ftype == 'g' || ftype == 'G')) {
+                var parts = val.py_split ('.');
+                var d = parts [0];
+                var t = parts [1];
+                while (t [t.length - 1] == '0') {
+                    t = t.slice (0, -1);
+                }
+                var val = t != '' ? '.'.join ([d, t]) : d;
+            }
+            if (alternate && val.indexOf ('.') == -1)
+                var val = val + '.';
+            return val;
+        };
+               
+        if (fmt_spec.endswith (['b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'n', 'o', 'x', 'X', '%'])) {
+            ftype = fmt_spec [fmt_spec.length - 1];
+            fmt_spec = fmt_spec.slice (0, -1);
+            if (ftype == 'n')
+                ftype = Number.isInteger (val) ? 'd' : 'f';
+        }
+        else {
+            ftype = Number.isInteger (val) ? 'd' : 'g';
+            g_default = true;
+        }
+        
+        var parts = fmt_spec.split ('.');
+        fmt_spec = parts [0];
+        precision = parts [1];
+        if (precision != undefined)
+            precision = parseInt (precision);
+        if (fmt_spec.length > 0 && fmt_spec [fmt_spec.length - 1] == ',') {
+            thousand_sep = true;
+            fmt_spec = fmt_spec.slice (0, -1);
+        }
+        if (fmt_spec.length > 0) {
+            var _width = '';
+            while (fmt_spec && fmt_spec [fmt_spec.length - 1].isnumeric ()) {
+                _width = fmt_spec [fmt_spec.length - 1] + _width;
+                fmt_spec = fmt_spec.slice (0, -1);
+            }
+            if (_width.length > 0) {
+                if (_width [0] == '0') {
+                    width = parseInt (_width.substr (1));
+                    zero = true;
+                }
+                else
+                    width = parseInt (_width);
+            }
+            if (fmt_spec.length > 0 && fmt_spec [fmt_spec.length - 1] == '#') {
+                alternate = true;
+                fmt_spec = fmt_spec.slice (0, -1);
+            }
+            if (fmt_spec.length > 0 && fmt_spec.endswith (['+', '-', ' '])) {
+                sign = fmt_spec [fmt_spec.length - 1];
+                fmt_spec = fmt_spec.slice (0, -1);
+            }
+            if (fmt_spec.length > 0 && fmt_spec.endswith (['<', '>', '=', '^'])) {
+                align = fmt_spec [fmt_spec.length - 1];
+                fmt_spec = fmt_spec.slice (0, -1);
+            }
+            if (fmt_spec.length > 0)
+                fill = fmt_spec [0];
+        }
+        
+        if (isNaN (val))
+            val = 'nan';
+        else if (val == Infinity)
+            val = 'inf';
+        else {
+            switch (ftype) {
+                case 'b':
+                    val = Math.floor (val).toString (2);
+                    if (alternate)
+                        val = '0b' + val;
+                    break;
+                case 'c':
+                    val = String.fromCharCode (Math.floor (val));
+                    break;
+                case 'd':
+                    val = Math.floor (val).toString ();
+                    if (thousand_sep)
+                        val = val.replace (/\B(?=(\d{3})+(?!\d))/g, ',');
+                    break;
+                case 'o':
+                    val = Math.floor (val).toString (8);
+                    if (alternate)
+                        val = '0o' + val;
+                    break;
+                case 'x':
+                case 'X':
+                    val = Math.floor (val).toString (16);
+                    if (alternate)
+                        val = '0x' + val;
+                    break;
+                case 'e':
+                case 'E':
+                    if (precision == undefined)
+                        precision = 6;
+                    var num_exp = val.toExponential (precision).split ('e+');
+                    var num = num_exp [0];
+                    var exp = num_exp [1];
+                    val = num.toString () + 'e+' + pad (exp.toString(), 2, '0');
+                    val = format_float (val);
+                    break;
+                case 'f':
+                case 'F':
+                case '%':
+                    if (precision == undefined)
+                        precision = 6;
+                    if (ftype == '%')
+                        val *= 100;
+                    val = val.toFixed (precision);
+                    val = format_float (val);
+                    if (ftype == '%')
+                        val += '%';
+                    break;
+                case 'g':
+                case 'G':
+                    if (precision == undefined)
+                        precision = g_default ? 1 : 6;
+                    if (precision == 0)
+                        precision = 1;
+                    var convert_to_exponent = false;
+                    if (g_default) {
+                        var parts = val.toString ().split ('.');
+                        var digit_count = parts [0].length + parts [1].length;
+                        if (digit_count >= precision)
+                            convert_to_exponent = true;
+                    }
+                    var num_exp = val.toExponential (precision - 1).split ('e+');
+                    var num = num_exp [0];
+                    var exp = num_exp [1];
+                    convert_to_exponent |= !((-4 <= exp && exp < precision));
+                    if (convert_to_exponent)
+                        val = num.toString() + 'e+' + pad (exp.toString(), 2, '0');
+                    else {
+                        val = val.toFixed (precision - 1 - exp);
+                    }
+                    val = format_float (val);
+                    break;
+                default:
+                    throw ValueError ("Invalid format type: '" + ftype + "'", new Error ());
+            }
+        }
+        if (ftype === ftype.toUpperCase ())
+            val = val.toUpperCase ()
+        if (ftype != 'c') {
+            if (sign == '-') {
+                if (is_negative)
+                    val = '-' + val;
+            }
+            else
+                val = is_negative ? '-' + val : sign + val;
+        }
+        if (zero) {
+            fill = '0';
+            align = '=';
+        }
+        if (width > 0)
+            val = pad (val, width, fill, align);
+        return val;
+    };
+__pragma__ ('endif')
+       
     var bool = function (any) {     // Always truly returns a bool, rather than something truthy or falsy
         return !!__t__ (any);
     };
@@ -521,6 +737,30 @@ __pragma__ ('endif')
         return rounded;
     };
     __all__.round = round;
+    
+__pragma__ ('ifdef', '__stringformat__')
+    var format = function (value, fmt_spec) {
+        if (value == undefined)
+            return 'None';
+        fmt_spec = fmt_spec || '';
+        var tval = typeof value;
+        switch (tval) {
+            case 'number':
+            case 'string':
+                return value.__format__(fmt_spec);
+            case 'boolean':
+                return fmt_spec ? (value ? 1 : 0).__format__(fmt_spec) : str (value);
+            case 'object':
+                if ('__format__' in value)
+                    return value.__format__ (fmt_spec);
+                else
+                    return str (value).__format__ (fmt_spec);
+            default:
+                return str (value).__format__ (fmt_spec);
+        }        
+    }
+    __all__.format = format;
+__pragma__ ('endif')
 
     // BEGIN unified iterator model
 
@@ -1218,7 +1458,60 @@ __pragma__ ('endif')
             }
         }
         return result;
-    }
+    };
+    
+__pragma__ ('ifdef', '__stringformat__')
+    String.prototype.__format__ = function (fmt_spec) {
+        if (fmt_spec == undefined || fmt_spec.strip ().length == 0)
+			return this.valueOf ();
+        var width = 0;
+        var align = '<';
+        var fill = ' ';
+        var val = this.valueOf ();
+        
+        var pad = function (s, width, fill, align) {
+            if (fill == undefined)
+                var fill = ' ';
+            if (align == undefined)
+                var align = '<';
+            var len = s.length;
+            var c = width - len;
+            switch (align) {
+                case '>':
+                    return __mul__ (fill, c) + s;
+                case '<':
+                    return s + __mul__ (fill, c);
+                case '^':
+                    var m = ((c % 2) + 2) % 2;
+                    var c = Math.floor (c / 2);
+                    return __mul__ (fill, c) + s + __mul__ (fill, c + m);
+                default:
+                    return s;
+            }
+        };
+
+        if (fmt_spec [fmt_spec.length - 1] == 's')
+            fmt_spec = fmt_spec.slice (0, -1);
+        if (fmt_spec.length > 0) {
+            var _width = '';
+            while (fmt_spec && fmt_spec [fmt_spec.length - 1].isnumeric ()) {
+                _width = fmt_spec [fmt_spec.length - 1] + _width;
+                fmt_spec = fmt_spec.slice (0, -1);
+            }
+            if (_width.length > 0)
+                width = parseInt (_width);
+            if (fmt_spec.length > 0 && fmt_spec.endswith (['<', '>', '^'])) {
+                align = fmt_spec [fmt_spec.length - 1];
+                fmt_spec = fmt_spec.slice (0, -1);
+            }
+            if (fmt_spec.length > 0)
+                fill = fmt_spec [0];
+        }
+        if (width > 0)
+            val = pad (val, width, fill, align);
+        return val;
+    };
+__pragma__ ('endif')
 
     // Since it's worthwhile for the 'format' function to be able to deal with *args, it is defined as a property
     // __get__ will produce a bound function if there's something before the dot
@@ -1232,6 +1525,64 @@ __pragma__ ('endif')
         get: function () {return __get__ (this, function (self) {
             var args = tuple ([] .slice.apply (arguments).slice (1));
             var autoIndex = 0;
+__pragma__ ('ifdef', '__stringformat__')
+            return self.replace (/\{([^\{]*)\}/g, function (match, key) {
+                var parts = key.split (':');
+                key = parts [0];
+                var fmt_spec = parts [1];
+                parts = key.split ('!')
+                key = parts [0];
+                var conversion = parts [1];
+                var value = undefined;
+                if (key == '') {
+                    key = autoIndex++;
+                }
+                if (key == +key && args [key] != undefined) {  // So key is numerical
+                    value = args [key];
+                }
+                else {              // Key is a string
+                    var attr = undefined;
+                    var idx = key.indexOf ('.');
+                    if (idx != -1) {
+                        attr = key.substring (idx + 1);
+                        key = key.substring (0, idx);
+                    }
+                    else {
+                        idx = key.indexOf ('[');
+                        if (idx != -1) {
+                            attr = key.substring (idx + 1).slice (0, -1);
+                            key = key.substring (0, idx);
+                        }
+                    }
+                        
+                    if ((key == +key) && attr && args [key] != undefined) {
+                        value = args [key][attr];
+                    }
+                    else {
+                        for (var index = 0; index < args.length; index++) {
+                            // Find first 'dict' that has that key and the right field
+                            if (typeof args [index] == 'object' && args [index][key] != undefined) {
+                                // Return that field field
+                                if (attr)
+                                    value = args [index][key][attr];
+                                else
+                                    value = args [index][key]; 
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (value == undefined)
+                    return match;
+                if (conversion == 'r')
+                    value = repr (value);
+                else if (conversion == 's')
+                    value = str (value);
+                else if (conversion == 'a')
+                    throw ValueError ("Conversion to ascii not yet supported: '" + match + "'", new Error ());
+                return format (value, fmt_spec);
+            });
+__pragma__ ('else')
             return self.replace (/\{(\w*)\}/g, function (match, key) {
                 if (key == '') {
                     key = autoIndex++;
@@ -1249,6 +1600,7 @@ __pragma__ ('endif')
                     return match;
                 }
             });
+__pragma__ ('endif')
         });},
         enumerable: true
     });
