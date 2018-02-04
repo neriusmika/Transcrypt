@@ -1470,10 +1470,6 @@ __pragma__ ('ifdef', '__stringformat__')
         var val = this.valueOf ();
         
         var pad = function (s, width, fill, align) {
-            if (fill == undefined)
-                var fill = ' ';
-            if (align == undefined)
-                var align = '<';
             var len = s.length;
             var c = width - len;
             switch (align) {
