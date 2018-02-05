@@ -682,6 +682,22 @@ __pragma__ ('endif')
         return aChar.charCodeAt (0);
     };
     __all__.ord = ord;
+    
+    // Ensure that page charset is UTF-8!
+    var ascii = function (s) {
+        if (s == undefined) {
+            return 'None';
+        }
+        else {
+            s = s.toString();
+            return repr (s.replace(/[^\x20-\x7E]/g, function (character) {
+                var escape = character.charCodeAt ().toString (16);
+                var longhand = escape.length > 2;
+                return '\\\\' + (longhand ? 'u' : 'x') + ('0000' + escape).slice (longhand ? -4 : -2);
+            }));
+        }
+    };
+    __all__.ascii = ascii;
 
     // Maximum of n numbers
     var max = function (nrOrSeq) {
@@ -1575,7 +1591,7 @@ __pragma__ ('ifdef', '__stringformat__')
                 else if (conversion == 's')
                     value = str (value);
                 else if (conversion == 'a')
-                    throw ValueError ("Conversion to ascii not yet supported: '" + match + "'", new Error ());
+                    value = ascii (value);
                 return format (value, fmt_spec);
             });
 __pragma__ ('else')

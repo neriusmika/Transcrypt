@@ -74,3 +74,5 @@ def run(autoTester):
     autoTester.check('{:custom_format}'.format(b))
     autoTester.check('{}'.format(a))
     autoTester.check('{}'.format(c))
+    # autoTester.check('ascii: {!a}'.format(None))
+    autoTester.check('ascii: {!a}'.format('abc²ĘĮŪ'))

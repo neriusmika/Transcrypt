@@ -70,6 +70,7 @@ class HTMLGenerator(object):
 
 		with open( fname, 'w') as f:
 			f.write("<html><head>")
+			f.write('<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">')
 			self._writeCSS(f)
 			f.write("</head><body>")
 
